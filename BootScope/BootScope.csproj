@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>BootScope</AssemblyName>
+    <RootNamespace>BootScope</RootNamespace>
+    <!-- Allows building/validating the project on non-Windows CI agents. The
+         resulting binary still requires Windows to run because it uses WPF
+         and Windows-only APIs (WMI, registry, Win32). -->
+    <EnableWindowsTargeting Condition="'$(OS)' != 'Windows_NT'">true</EnableWindowsTargeting>
+  </PropertyGroup>
+
+
+</Project>
