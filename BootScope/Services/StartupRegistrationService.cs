@@ -34,7 +34,7 @@ public class StartupRegistrationService
 
             if (enabled)
             {
-                var exePath = Environment.ProcessPath ?? System.Reflection.Assembly.GetExecutingAssembly().Location;
+                var exePath = Environment.ProcessPath ?? System.IO.Path.Combine(AppContext.BaseDirectory, "BootScope.exe");
                 key?.SetValue(ValueName, $"\"{exePath}\"");
             }
             else
