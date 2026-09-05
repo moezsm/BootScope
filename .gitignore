@@ -3,6 +3,9 @@ bin/
 obj/
 *.user
 
+## Packaging output (installer/ZIP built by CI; never committed)
+dist/
+
 ## Rider / VS
 .vs/
 .idea/

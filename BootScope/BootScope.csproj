@@ -8,6 +8,9 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>BootScope</AssemblyName>
     <RootNamespace>BootScope</RootNamespace>
+    <!-- Default version used for local/manual builds. CI overrides this with the version
+         derived from the Git tag (see .github/workflows/windows-executable.yml). -->
+    <Version>1.0.0</Version>
     <!-- Allows building/validating the project on non-Windows CI agents. The
          resulting binary still requires Windows to run because it uses WPF
          and Windows-only APIs (WMI, registry, Win32). -->
