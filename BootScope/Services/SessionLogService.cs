@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using BootScope.Models;
 
 namespace BootScope.Services;
@@ -14,7 +15,11 @@ public class SessionLogService
     private static readonly string LogDirectory = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BootScope", "Logs");
 
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter() },
+    };
 
     /// <summary>
     /// Writes a startup session log entry file containing the top CPU and RAM consumers.
@@ -32,7 +37,7 @@ public class SessionLogService
                 ProcessId = p.ProcessId,
                 CpuUsagePercent = p.CpuUsagePercent,
                 MemoryUsageMb = p.MemoryUsageMb,
-                Reason = "CPU",
+                Reason = SessionLogReason.Cpu,
             }));
             entries.AddRange(topMemoryProcesses.Select(p => new SessionLogEntry
             {
@@ -40,7 +45,7 @@ public class SessionLogService
                 ProcessId = p.ProcessId,
                 CpuUsagePercent = p.CpuUsagePercent,
                 MemoryUsageMb = p.MemoryUsageMb,
-                Reason = "RAM",
+                Reason = SessionLogReason.Ram,
             }));
 
             var fileName = $"session-{DateTime.Now:yyyyMMdd-HHmmss}.json";

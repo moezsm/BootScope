@@ -1,5 +1,12 @@
 namespace BootScope.Models;
 
+/// <summary>Which resource metric caused a process to be recorded in the session log.</summary>
+public enum SessionLogReason
+{
+    Cpu,
+    Ram
+}
+
 /// <summary>
 /// A single entry in the startup session log, capturing the top resource-consuming processes
 /// shortly after the user logs in so they can review what slowed down their machine.
@@ -16,6 +23,6 @@ public class SessionLogEntry
 
     public double MemoryUsageMb { get; init; }
 
-    /// <summary>Which metric triggered this entry being logged ("CPU" or "RAM").</summary>
-    public string Reason { get; init; } = string.Empty;
+    /// <summary>Which metric triggered this entry being logged.</summary>
+    public SessionLogReason Reason { get; init; }
 }

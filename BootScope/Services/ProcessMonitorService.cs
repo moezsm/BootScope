@@ -211,7 +211,6 @@ public class ProcessMonitorService
 
     private static bool IsAccessError(Exception ex) =>
         ex is UnauthorizedAccessException or System.ComponentModel.Win32Exception;
-
     private static bool IsKnownWindowsPublisher(string publisher) =>
         publisher.Contains("Microsoft", StringComparison.OrdinalIgnoreCase);
 

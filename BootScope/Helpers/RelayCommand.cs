@@ -79,6 +79,18 @@ public class AsyncRelayCommand : ICommand
             RelayCommand.RaiseCanExecuteChanged();
             await _execute(parameter);
         }
+        catch (Exception ex)
+        {
+            // Execute is "async void" so exceptions can't be observed by callers; surface them
+            // via the WPF dispatcher's unhandled exception mechanism instead of silently
+            // swallowing them or crashing with no diagnostic information.
+            System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+                System.Windows.MessageBox.Show(
+                    $"An unexpected error occurred: {ex.Message}",
+                    "BootScope",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Error));
+        }
         finally
         {
             _isExecuting = false;

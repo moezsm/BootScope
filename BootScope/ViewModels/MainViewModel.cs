@@ -251,13 +251,12 @@ public class MainViewModel : ObservableObject
             }
         }
 
-        var existingIds = Processes.Select(p => p.ProcessId).ToHashSet();
+        var existingIds = Processes.ToDictionary(p => p.ProcessId);
 
         foreach (var updated in latest)
         {
-            if (existingIds.Contains(updated.ProcessId))
+            if (existingIds.TryGetValue(updated.ProcessId, out var existing))
             {
-                var existing = Processes.First(p => p.ProcessId == updated.ProcessId);
                 existing.CpuUsagePercent = updated.CpuUsagePercent;
                 existing.MemoryUsageMb = updated.MemoryUsageMb;
                 existing.MemoryUsagePercent = updated.MemoryUsagePercent;

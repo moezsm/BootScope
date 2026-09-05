@@ -113,7 +113,21 @@ public class StartupDetectionService
             return closingQuote > 0 ? command[1..closingQuote] : command;
         }
 
-        var spaceIndex = command.IndexOf(".exe", StringComparison.OrdinalIgnoreCase);
-        return spaceIndex > 0 ? command[..(spaceIndex + 4)] : command;
+        // Unquoted commands are most commonly ".exe", but some legitimate startup entries use
+        // other executable extensions (.com, .bat, .cmd) - check all of them.
+        foreach (var extension in new[] { ".exe", ".com", ".bat", ".cmd" })
+        {
+            var extensionIndex = command.IndexOf(extension, StringComparison.OrdinalIgnoreCase);
+            if (extensionIndex > 0)
+            {
+                return command[..(extensionIndex + extension.Length)];
+            }
+        }
+
+        // No known extension found (e.g. unquoted path with spaces and no recognised
+        // extension, or trailing arguments only): fall back to the text up to the first space,
+        // which is the best-effort executable path in that case.
+        var spaceIndex = command.IndexOf(' ');
+        return spaceIndex > 0 ? command[..spaceIndex] : command;
     }
 }

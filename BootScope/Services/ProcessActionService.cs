@@ -27,8 +27,20 @@ public class ProcessActionService
             try
             {
                 using var process = Process.GetProcessById(processId);
-                process.Kill();
-                process.WaitForExit(5000);
+
+                // Try a graceful shutdown first (e.g. lets an app prompt to save unsaved work),
+                // only falling back to a forceful kill if the process is still running.
+                if (process.MainWindowHandle != IntPtr.Zero && process.CloseMainWindow())
+                {
+                    process.WaitForExit(3000);
+                }
+
+                if (!process.HasExited)
+                {
+                    process.Kill();
+                    process.WaitForExit(5000);
+                }
+
                 return ProcessActionResult.Success();
             }
             catch (ArgumentException)
