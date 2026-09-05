@@ -21,28 +21,28 @@
             <Border Style="{StaticResource CardBorderStyle}">
                 <StackPanel>
                     <TextBlock Text="CPU USAGE" Style="{StaticResource MetricLabelStyle}" />
-                    <TextBlock Text="{Binding CpuUsagePercent, StringFormat={}{0:0.0}%}" Style="{StaticResource MetricValueStyle}" />
+                    <TextBlock Text="{Binding CpuUsagePercent, Mode=OneWay, StringFormat={}{0:0.0}%}" Style="{StaticResource MetricValueStyle}" />
                 </StackPanel>
             </Border>
             <Border Style="{StaticResource CardBorderStyle}">
                 <StackPanel>
                     <TextBlock Text="MEMORY USAGE" Style="{StaticResource MetricLabelStyle}" />
-                    <TextBlock Text="{Binding MemoryUsagePercent, StringFormat={}{0:0.0}%}" Style="{StaticResource MetricValueStyle}" />
+                    <TextBlock Text="{Binding MemoryUsagePercent, Mode=OneWay, StringFormat={}{0:0.0}%}" Style="{StaticResource MetricValueStyle}" />
                     <TextBlock Style="{StaticResource MetricLabelStyle}">
-                        <Run Text="{Binding MemoryUsedMb, StringFormat={}{0:0}}" /><Run Text=" / " /><Run Text="{Binding MemoryTotalMb, StringFormat={}{0:0}}" /><Run Text=" MB" />
+                        <Run Text="{Binding MemoryUsedMb, Mode=OneWay, StringFormat={}{0:0}}" /><Run Text=" / " /><Run Text="{Binding MemoryTotalMb, Mode=OneWay, StringFormat={}{0:0}}" /><Run Text=" MB" />
                     </TextBlock>
                 </StackPanel>
             </Border>
             <Border Style="{StaticResource CardBorderStyle}">
                 <StackPanel>
                     <TextBlock Text="DISK USAGE" Style="{StaticResource MetricLabelStyle}" />
-                    <TextBlock Text="{Binding DiskUsagePercent, StringFormat={}{0:0.0}%}" Style="{StaticResource MetricValueStyle}" />
+                    <TextBlock Text="{Binding DiskUsagePercent, Mode=OneWay, StringFormat={}{0:0.0}%}" Style="{StaticResource MetricValueStyle}" />
                 </StackPanel>
             </Border>
             <Border Style="{StaticResource CardBorderStyle}">
                 <StackPanel>
                     <TextBlock Text="NETWORK USAGE" Style="{StaticResource MetricLabelStyle}" />
-                    <TextBlock Text="{Binding NetworkUsageKbPerSec, StringFormat={}{0:0.0} KB/s}" Style="{StaticResource MetricValueStyle}" />
+                    <TextBlock Text="{Binding NetworkUsageKbPerSec, Mode=OneWay, StringFormat={}{0:0.0} KB/s}" Style="{StaticResource MetricValueStyle}" />
                 </StackPanel>
             </Border>
         </UniformGrid>
