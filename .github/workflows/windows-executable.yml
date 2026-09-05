@@ -22,7 +22,7 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Publish self-contained executable
-        run: dotnet publish BootScope/BootScope.csproj --configuration Release --no-restore --property:PublishProfile=Windows-x64
+        run: dotnet publish BootScope/BootScope.csproj --configuration Release --property:PublishProfile=Windows-x64
 
       - name: Package executable
         shell: pwsh
