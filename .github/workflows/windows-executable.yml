@@ -1,13 +1,25 @@
 name: Build Windows executable
 
+# Release process:
+#   git tag v1.0.0
+#   git push origin v1.0.0
+#
+# Pushing a tag matching v*.*.* builds the self-contained app, packages the installer and the
+# portable ZIP, verifies both, generates SHA-256 checksums, and publishes everything to a new
+# GitHub Release for that tag (with auto-generated release notes). Use workflow_dispatch to run
+# the same build/packaging/verification steps manually (e.g. to test the pipeline) without
+# publishing a release.
+
 on:
   workflow_dispatch:
   push:
     tags:
-      - "v*"
+      - "v*.*.*"
 
+# Least privilege: only contents write is needed, and only to create the release and upload
+# its assets. No other permissions are requested.
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   publish:
@@ -21,16 +33,142 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Publish self-contained executable
-        run: dotnet publish BootScope/BootScope.csproj --configuration Release --property:PublishProfile=Windows-x64
-
-      - name: Package executable
+      - name: Determine version
+        id: version
         shell: pwsh
-        run: Compress-Archive -Path BootScope/bin/Release/net8.0-windows/win-x64/publish/* -DestinationPath BootScope-win-x64.zip
+        run: |
+          $ref = "${{ github.ref }}"
+          # Strict match on the same v*.*.* shape as the workflow's tag trigger: numeric
+          # major.minor.patch, with an optional well-formed SemVer -prerelease and/or +build
+          # suffix, so a stray or malformed tag can never be treated as a real release.
+          $isRelease = $ref -match '^refs/tags/v\d+\.\d+\.\d+(-[0-9A-Za-z-.]+)?(\+[0-9A-Za-z-.]+)?$'
+          if ($isRelease) {
+            $version = $ref -replace '^refs/tags/v', ''
+          } else {
+            # Safe fallback for manual workflow_dispatch runs (not used for real releases).
+            $version = "0.0.0-dev.$($env:GITHUB_RUN_NUMBER)"
+          }
 
-      - name: Upload executable package
+          # Inno Setup's VersionInfoVersion (the Win32 file version resource) requires a plain
+          # numeric x.x.x.x value, so derive one from the leading numeric part of the version
+          # and fall back to 0.0.0.0 if nothing numeric could be parsed.
+          if ($version -match '^(\d+)\.(\d+)\.(\d+)') {
+            $fileVersion = "$($Matches[1]).$($Matches[2]).$($Matches[3]).0"
+          } else {
+            $fileVersion = "0.0.0.0"
+          }
+
+          Write-Host "Resolved version: $version (file version: $fileVersion)"
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "file_version=$fileVersion" >> $env:GITHUB_OUTPUT
+          "is_release=$(if ($isRelease) { 'true' } else { 'false' })" >> $env:GITHUB_OUTPUT
+
+      - name: Publish self-contained executable
+        run: >
+          dotnet publish BootScope/BootScope.csproj
+          --configuration Release
+          --property:PublishProfile=Windows-x64
+          --property:Version=${{ steps.version.outputs.version }}
+          --property:FileVersion=${{ steps.version.outputs.file_version }}
+          --property:InformationalVersion=${{ steps.version.outputs.version }}
+
+      - name: Verify published output
+        shell: pwsh
+        run: |
+          $exePath = "BootScope/bin/Release/net8.0-windows/win-x64/publish/BootScope.exe"
+          if (-not (Test-Path $exePath)) {
+            throw "Expected published executable not found at $exePath"
+          }
+          if ((Get-Item $exePath).Length -eq 0) {
+            throw "Published executable at $exePath is empty"
+          }
+          Write-Host "Verified published executable at $exePath"
+
+      - name: Create output directory
+        shell: pwsh
+        run: New-Item -ItemType Directory -Force -Path dist | Out-Null
+
+      - name: Package portable ZIP
+        shell: pwsh
+        run: |
+          $zipPath = "dist/BootScope-win-x64-${{ steps.version.outputs.version }}.zip"
+          Compress-Archive -Path BootScope/bin/Release/net8.0-windows/win-x64/publish/* -DestinationPath $zipPath
+          if (-not (Test-Path $zipPath) -or (Get-Item $zipPath).Length -eq 0) {
+            throw "Portable ZIP at $zipPath was not created or is empty"
+          }
+          Write-Host "Verified portable ZIP at $zipPath"
+
+      - name: Build installer with Inno Setup
+        shell: pwsh
+        run: |
+          # Inno Setup 6 is preinstalled on GitHub's windows-latest runner image at this fixed
+          # path (see actions/runner-images). If a future image drops it or changes the path,
+          # this step fails clearly below rather than silently skipping installer creation; in
+          # that case fall back to installing it explicitly, e.g. via
+          # `choco install innosetup`, or search PATH for ISCC.exe.
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            throw "Inno Setup Compiler (ISCC.exe) was not found at $iscc"
+          }
+
+          & $iscc `
+            installer\BootScope.iss `
+            "/DMyAppVersion=${{ steps.version.outputs.version }}" `
+            "/DMyFileVersion=${{ steps.version.outputs.file_version }}" `
+            "/DPublishDir=$PWD\BootScope\bin\Release\net8.0-windows\win-x64\publish" `
+            "/DOutputDir=$PWD\dist"
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "Inno Setup compilation failed with exit code $LASTEXITCODE"
+          }
+
+          $installerPath = "dist/BootScope-Setup-${{ steps.version.outputs.version }}.exe"
+          if (-not (Test-Path $installerPath) -or (Get-Item $installerPath).Length -eq 0) {
+            throw "Installer at $installerPath was not created or is empty"
+          }
+          Write-Host "Verified installer at $installerPath"
+
+      - name: Generate SHA-256 checksums
+        id: checksums
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $files = @(
+            "dist/BootScope-Setup-$version.exe",
+            "dist/BootScope-win-x64-$version.zip"
+          )
+          $checksumPath = "dist/BootScope-$version-SHA256SUMS.txt"
+          $lines = foreach ($file in $files) {
+            $hash = (Get-FileHash -Path $file -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $(Split-Path -Leaf $file)"
+          }
+          Set-Content -Path $checksumPath -Value $lines -Encoding ascii
+          if (-not (Test-Path $checksumPath) -or (Get-Item $checksumPath).Length -eq 0) {
+            throw "Checksum file at $checksumPath was not created or is empty"
+          }
+          Get-Content $checksumPath
+          "checksum_path=$checksumPath" >> $env:GITHUB_OUTPUT
+
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: BootScope-win-x64
-          path: BootScope-win-x64.zip
+          name: BootScope-${{ steps.version.outputs.version }}
+          path: |
+            dist/BootScope-Setup-${{ steps.version.outputs.version }}.exe
+            dist/BootScope-win-x64-${{ steps.version.outputs.version }}.zip
+            dist/BootScope-${{ steps.version.outputs.version }}-SHA256SUMS.txt
           if-no-files-found: error
+
+      - name: Create GitHub Release
+        if: steps.version.outputs.is_release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          gh release create "${{ github.ref_name }}" `
+            "dist/BootScope-Setup-$version.exe" `
+            "dist/BootScope-win-x64-$version.zip" `
+            "dist/BootScope-$version-SHA256SUMS.txt" `
+            --title "BootScope $version" `
+            --generate-notes

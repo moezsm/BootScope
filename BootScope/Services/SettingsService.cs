@@ -17,6 +17,13 @@ public class SettingsService
 
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
+    /// <summary>
+    /// Whether a settings file already exists on disk. Used to detect the very first launch
+    /// after installation so startup-related settings can be initialized from the actual
+    /// registered state instead of the hard-coded default.
+    /// </summary>
+    public bool SettingsFileExists() => File.Exists(SettingsFilePath);
+
     public AppSettings Load()
     {
         try

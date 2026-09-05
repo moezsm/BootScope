@@ -40,6 +40,7 @@ public partial class App : Application
         // administrative action) would only be requested at the point the user chooses that
         // action, and is out of scope for the read-only MVP features implemented here.
         _settingsService = new SettingsService();
+        var isFirstLaunch = !_settingsService.SettingsFileExists();
         _settings = _settingsService.Load();
 
         _classificationService = new SafetyClassificationService();
@@ -49,6 +50,19 @@ public partial class App : Application
         _processActionService = new ProcessActionService();
         _sessionLogService = new SessionLogService();
         _startupRegistrationService = new StartupRegistrationService();
+
+        if (isFirstLaunch)
+        {
+            // No settings file yet: this is the very first run after a fresh install (or a
+            // portable copy run for the first time). Reflect whatever the installer's
+            // "Launch BootScope when I sign in to Windows" task actually configured (if
+            // anything) instead of overwriting it with the in-app default, and without ever
+            // writing to the registry ourselves here - this keeps the installer option and the
+            // in-app Settings toggle in sync and avoids creating a duplicate/conflicting
+            // startup entry on first launch.
+            _settings.LaunchAtLogin = _startupRegistrationService.IsRegistered();
+            _settingsService.Save(_settings);
+        }
 
         _mainViewModel = new MainViewModel(
             _processMonitorService,
