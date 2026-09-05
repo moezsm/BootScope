@@ -40,9 +40,24 @@ BootScope/
 ```
 
 ## Building
-
 Requires the .NET 8 SDK (Windows Desktop workload) and Windows to run:
 
 ```
 dotnet build BootScope.slnx
 ```
+
+## Downloading a ready-to-run executable
+
+The **Build Windows executable** workflow creates a self-contained Windows x64 package.
+Run it manually from the repository's **Actions** tab, or push a version tag such as
+`v1.0.0`. Download the `BootScope-win-x64` artifact, unzip it, and double-click
+`BootScope.exe`. No .NET installation is required on the target Windows computer.
+
+To publish the same package locally on Windows:
+
+```
+dotnet publish BootScope/BootScope.csproj --configuration Release --property:PublishProfile=Windows-x64
+```
+
+The executable is written to
+`BootScope/bin/Release/net8.0-windows/win-x64/publish/BootScope.exe`.
