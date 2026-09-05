@@ -38,7 +38,11 @@ jobs:
         shell: pwsh
         run: |
           $ref = "${{ github.ref }}"
-          if ($ref -like "refs/tags/v*") {
+          # Strict match on the same v*.*.* shape as the workflow's tag trigger (numeric
+          # major.minor.patch, optionally with a -prerelease/+build suffix), so a stray or
+          # malformed tag can never be treated as a real release.
+          $isRelease = $ref -match '^refs/tags/v\d+\.\d+\.\d+([.-].*)?$'
+          if ($isRelease) {
             $version = $ref -replace '^refs/tags/v', ''
           } else {
             # Safe fallback for manual workflow_dispatch runs (not used for real releases).
@@ -57,7 +61,7 @@ jobs:
           Write-Host "Resolved version: $version (file version: $fileVersion)"
           "version=$version" >> $env:GITHUB_OUTPUT
           "file_version=$fileVersion" >> $env:GITHUB_OUTPUT
-          "is_release=$($ref -like 'refs/tags/v*')" >> $env:GITHUB_OUTPUT
+          "is_release=$(if ($isRelease) { 'true' } else { 'false' })" >> $env:GITHUB_OUTPUT
 
       - name: Publish self-contained executable
         run: >
@@ -151,7 +155,7 @@ jobs:
           if-no-files-found: error
 
       - name: Create GitHub Release
-        if: steps.version.outputs.is_release == 'True'
+        if: steps.version.outputs.is_release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh

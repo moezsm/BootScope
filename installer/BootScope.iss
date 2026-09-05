@@ -31,7 +31,12 @@
 
 [Setup]
 ; Fixed AppId so upgrades are recognized as the same product (no duplicate Start Menu/
-; Add-or-Remove-Programs entries across versions).
+; Add-or-Remove-Programs entries across versions). This GUID was generated once for BootScope
+; and must NEVER change across releases, or existing installs will no longer be recognized as
+; upgradable (Inno Setup would treat the new version as a different product). If this project
+; is ever forked/renamed into an unrelated product, generate a fresh GUID for it (e.g. via
+; Tools > Generate GUID in the Inno Setup IDE, or any standard GUID generator) instead of
+; reusing this one.
 AppId={{6C6E8C9F-6E9A-4C8B-9C4C-6F6E8F5C3B21}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
