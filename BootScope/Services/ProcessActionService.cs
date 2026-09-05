@@ -16,6 +16,9 @@ namespace BootScope.Services;
 /// </summary>
 public class ProcessActionService
 {
+    private const int GracefulExitTimeoutMs = 3000;
+    private const int ForcefulExitTimeoutMs = 5000;
+
     /// <summary>
     /// Attempts to gracefully close, then forcibly kill, the process with the given id.
     /// Callers MUST have already obtained explicit user confirmation before calling this.
@@ -32,13 +35,13 @@ public class ProcessActionService
                 // only falling back to a forceful kill if the process is still running.
                 if (process.MainWindowHandle != IntPtr.Zero && process.CloseMainWindow())
                 {
-                    process.WaitForExit(3000);
+                    process.WaitForExit(GracefulExitTimeoutMs);
                 }
 
                 if (!process.HasExited)
                 {
                     process.Kill();
-                    process.WaitForExit(5000);
+                    process.WaitForExit(ForcefulExitTimeoutMs);
                 }
 
                 return ProcessActionResult.Success();

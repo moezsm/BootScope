@@ -83,15 +83,6 @@ public class ProcessMonitorService
     {
         try
         {
-            var name = process.ProcessName + (process.ProcessName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? string.Empty : ".exe");
-            // Some system processes (e.g. "System", "Registry") have no .exe suffix; keep the raw name for those.
-            if (string.Equals(process.ProcessName, "System", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(process.ProcessName, "Registry", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(process.ProcessName, "Idle", StringComparison.OrdinalIgnoreCase))
-            {
-                name = process.ProcessName;
-            }
-
             var hasAccessDenied = false;
             string executablePath = string.Empty;
             string publisher = "Unknown";
@@ -128,6 +119,14 @@ public class ProcessMonitorService
                 // user. This is expected and handled gracefully rather than crashing.
                 hasAccessDenied = true;
             }
+
+            // Prefer the real image file name (e.g. "chrome.exe") taken from the executable
+            // path, which always has the correct extension. Only fall back to the raw
+            // Process.ProcessName (no fabricated extension) for pseudo-processes such as
+            // "System", "Registry", and "Idle" that have no backing executable file.
+            var name = !string.IsNullOrEmpty(executablePath)
+                ? Path.GetFileName(executablePath)
+                : process.ProcessName;
 
             try
             {

@@ -1,5 +1,6 @@
 using Microsoft.Win32;
 using System.IO;
+using BootScope.Helpers;
 
 namespace BootScope.Services;
 
@@ -87,6 +88,19 @@ public class StartupDetectionService
 
             foreach (var file in Directory.EnumerateFiles(folderPath))
             {
+                if (string.Equals(Path.GetExtension(file), ".lnk", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Startup folder entries are very commonly shortcuts (.lnk) rather than the
+                    // executable itself; resolve the shortcut's real target so it can be
+                    // matched against a running process's executable path.
+                    var target = ShortcutResolver.ResolveTarget(file);
+                    if (!string.IsNullOrWhiteSpace(target))
+                    {
+                        paths.Add(target);
+                        continue;
+                    }
+                }
+
                 paths.Add(file);
             }
         }

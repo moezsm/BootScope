@@ -16,7 +16,6 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <Grid.Resources>
             <Style TargetType="TextBlock">
@@ -54,7 +53,7 @@
             <TextBox Text="{Binding RamWarningThresholdPercent, UpdateSourceTrigger=PropertyChanged}" />
         </StackPanel>
 
-        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
             <Button Content="Save" Width="90" Margin="0,0,8,0" Click="Save_Click" Style="{StaticResource ToolbarButtonStyle}" />
             <Button Content="Cancel" Width="90" Click="Cancel_Click" Style="{StaticResource ToolbarButtonStyle}" />
         </StackPanel>
