@@ -38,10 +38,10 @@ jobs:
         shell: pwsh
         run: |
           $ref = "${{ github.ref }}"
-          # Strict match on the same v*.*.* shape as the workflow's tag trigger (numeric
-          # major.minor.patch, optionally with a -prerelease/+build suffix), so a stray or
-          # malformed tag can never be treated as a real release.
-          $isRelease = $ref -match '^refs/tags/v\d+\.\d+\.\d+([.-].*)?$'
+          # Strict match on the same v*.*.* shape as the workflow's tag trigger: numeric
+          # major.minor.patch, with an optional well-formed SemVer -prerelease and/or +build
+          # suffix, so a stray or malformed tag can never be treated as a real release.
+          $isRelease = $ref -match '^refs/tags/v\d+\.\d+\.\d+(-[0-9A-Za-z-.]+)?(\+[0-9A-Za-z-.]+)?$'
           if ($isRelease) {
             $version = $ref -replace '^refs/tags/v', ''
           } else {
@@ -101,6 +101,11 @@ jobs:
       - name: Build installer with Inno Setup
         shell: pwsh
         run: |
+          # Inno Setup 6 is preinstalled on GitHub's windows-latest runner image at this fixed
+          # path (see actions/runner-images). If a future image drops it or changes the path,
+          # this step fails clearly below rather than silently skipping installer creation; in
+          # that case fall back to installing it explicitly, e.g. via
+          # `choco install innosetup`, or search PATH for ISCC.exe.
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) {
             throw "Inno Setup Compiler (ISCC.exe) was not found at $iscc"
